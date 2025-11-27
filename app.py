@@ -7,7 +7,7 @@ from sklearn.metrics import confusion_matrix, precision_recall_curve, average_pr
 import streamlit as st
 
 # Load data
-df = pd.read_csv("/mnt/data/transactions_full.csv")
+df = pd.read_csv("transactions_full.csv")
 
 # Load model
 model = joblib.load("/mnt/data/model.joblib")
