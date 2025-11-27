@@ -10,7 +10,7 @@ import streamlit as st
 df = pd.read_csv("transactions_full.csv")
 
 # Load model
-model = joblib.load("/mnt/data/model.joblib")
+model = joblib.load("model.joblib")
 
 # Title and description
 st.set_page_config(page_title="Fraude Bancario", layout="centered")
