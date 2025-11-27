@@ -9,3 +9,5 @@ seaborn
 xgboost
 plotly
 joblib
+mlxtend
+shap
