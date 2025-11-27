@@ -53,9 +53,9 @@ plt.xticks(rotation=45)
 ax.set_ylabel("Fraud Rate")
 st.pyplot(fig)
 
-# Celda 4: Colas M/M/1 y M/M/c
-import math
-
+# -----------------------------
+# Celda 5: Colas M/M/1 y M/M/c
+# -----------------------------
 def mm1_metrics(lmbda, mu):
     rho = lmbda / mu
     if rho >= 1:
@@ -90,36 +90,8 @@ mm1 = mm1_metrics(lambda_h/60, mu_h/60)
 mmc = mmc_metrics(lambda_h/60, mu_h/60, c)
 
 df_queues = pd.DataFrame([mm1, mmc])
-print("📊 Resultados de modelos de colas:")
-display(df_queues)
-
-
-# Celda 5: Reglas de asociación corregida
-from mlxtend.frequent_patterns import apriori, association_rules
-
-# Indicadores binarios
-df["is_high_amount"] = df["amount"] > 1000
-df["is_night"] = df["timestamp"].dt.hour.isin([0,1,2,3,4,23])
-
-# One-hot de canales
-channels = pd.get_dummies(df["channel"], prefix="channel")
-
-# Matriz booleana
-basket = pd.concat([df[["is_fraud","is_high_amount","is_night"]], channels], axis=1).astype(bool)
-
-# Itemsets frecuentes con soporte más bajo (ej. 0.05 = 5%)
-freq = apriori(basket, min_support=0.05, use_colnames=True)
-
-# Reglas de asociación
-rules = association_rules(freq, metric="lift", min_threshold=1.0)
-
-# Top reglas
-top_rules = rules.sort_values("lift", ascending=False).head(10)
-
-print("📊 Top 10 reglas de asociación (con soporte mínimo 5%):")
-display(top_rules[["antecedents","consequents","support","confidence","lift"]])
-
-
+st.subheader("📊 Resultados de modelos de colas")
+st.dataframe(df_queues)
 
 # -----------------------------
 # Celda 6: Modelos ML
