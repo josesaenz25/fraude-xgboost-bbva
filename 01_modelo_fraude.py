@@ -36,7 +36,8 @@ df.rename(columns={"fraud": "is_fraud"}, inplace=True)
 df["is_fraud"] = df["is_fraud"].astype(int)
 
 print("📊 Base ficticia generada:")
-display(df.head())
+st.write(df.head())
+
 
 
 # In[3]:
