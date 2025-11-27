@@ -6,6 +6,11 @@
 
 #Celda 0: Verificación del entorno
 
+import streamlit as st
+import pandas as pd
+import numpy as np
+
+
 import pandas as pd, numpy as np, sklearn, xgboost
 print("pandas:", pd.__version__)
 print("numpy:", np.__version__)
