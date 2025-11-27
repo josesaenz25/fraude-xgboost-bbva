@@ -193,10 +193,21 @@ fig = px.line(agg, x="hour_bucket", y="fraud_rate", color="channel",
               title="Tasa de fraude por hora y canal (interactivo)")
 st.plotly_chart(fig)
 
-# -----------------------------
 # Celda 17: Proceso de Poisson
-# -----------------------------
 lambda_rate = 10  # fraudes por hora
 expected_time = 1 / lambda_rate
+
 st.subheader("📊 Proceso de Poisson")
-st.write(f"Tiempo esperado hasta el próximo fraude
+st.write(f"Tiempo esperado hasta el próximo fraude: {expected_time*60:.2f} minutos")
+
+# Simulación de tiempos de detección (distribución exponencial)
+n_samples = 1000
+times = np.random.exponential(scale=1/lambda_rate, size=n_samples)
+
+# Graficar histograma
+fig, ax = plt.subplots(figsize=(8,6))
+ax.hist(times*60, bins=30, density=True, alpha=0.6, color='blue')
+ax.set_title("Distribución del tiempo hasta detección de fraude (minutos)")
+ax.set_xlabel("Tiempo (minutos)")
+ax.set_ylabel("Densidad")
+st.pyplot(fig)
