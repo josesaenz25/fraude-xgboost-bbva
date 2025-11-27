@@ -120,6 +120,21 @@ st.subheader("📊 Reporte XGBoost")
 st.dataframe(xgb_report)
 
 # -----------------------------
+# Celda 7: Reglas de asociación
+# -----------------------------
+df["is_high_amount"] = df["amount"] > 800
+df["is_night"] = df["timestamp"].dt.hour.isin([0,1,2,3,4,23])
+channels = pd.get_dummies(df["channel"], prefix="channel")
+basket = pd.concat([df[["is_fraud","is_high_amount","is_night"]], channels], axis=1).astype(bool)
+
+freq = apriori(basket, min_support=0.05, use_colnames=True)
+rules = association_rules(freq, metric="lift", min_threshold=1.0)
+top_rules = rules.sort_values("lift", ascending=False).head(10)
+
+st.subheader("📊 Top reglas de asociación")
+st.dataframe(top_rules[["antecedents","consequents","support","confidence","lift"]])
+
+# -----------------------------
 # Celda 9: ROC
 # -----------------------------
 rf_prob = rf.predict_proba(X_test)[:,1]
@@ -141,20 +156,47 @@ ax.legend()
 st.pyplot(fig)
 
 # -----------------------------
-# Celda 11: Plotly interactivo
+# Celda 10: Importancia de variables
+# -----------------------------
+rf_importances = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False)
+xgb_importances = pd.Series(xgb_model.feature_importances_, index=X.columns).sort_values(ascending=False)
+
+fig, ax = plt.subplots(figsize=(8,6))
+sns.barplot(x=rf_importances.values, y=rf_importances.index, ax=ax)
+ax.set_title("Importancia de variables - RandomForest")
+st.pyplot(fig)
+
+fig, ax = plt.subplots(figsize=(8,6))
+sns.barplot(x=xgb_importances.values, y=xgb_importances.index, ax=ax)
+ax.set_title("Importancia de variables - XGBoost")
+st.pyplot(fig)
+
+# -----------------------------
+# Celda 11: SHAP values
+# -----------------------------
+explainer = shap.TreeExplainer(xgb_model)
+shap_values = explainer(X_test)
+
+st.subheader("📊 SHAP values - Importancia de variables")
+st.write("Barras:")
+shap.summary_plot(shap_values, X_test, plot_type="bar", show=False)
+st.pyplot(bbox_inches='tight')
+
+st.write("Dispersión:")
+shap.summary_plot(shap_values, X_test, show=False)
+st.pyplot(bbox_inches='tight')
+
+# -----------------------------
+# Celda 12: Plotly interactivo
 # -----------------------------
 fig = px.line(agg, x="hour_bucket", y="fraud_rate", color="channel",
               title="Tasa de fraude por hora y canal (interactivo)")
 st.plotly_chart(fig)
 
 # -----------------------------
-# Celda 13: Narrativa ejecutiva
+# Celda 17: Proceso de Poisson
 # -----------------------------
-summary_text = f"""
-### 📑 Resumen Ejecutivo
-- Se analizaron {len(df)} transacciones ficticias.
-- La tasa de fraude promedio fue {df['is_fraud'].mean():.2%}.
-- RandomForest F1={rf_report.loc['weighted avg','f1-score']:.2f}.
-- XGBoost F1={xgb_report.loc['weighted avg','f1-score']:.2f}.
-"""
-st.markdown(summary_text)
+lambda_rate = 10  # fraudes por hora
+expected_time = 1 / lambda_rate
+st.subheader("📊 Proceso de Poisson")
+st.write(f"Tiempo esperado hasta el próximo fraude
