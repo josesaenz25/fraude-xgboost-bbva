@@ -53,6 +53,74 @@ plt.xticks(rotation=45)
 ax.set_ylabel("Fraud Rate")
 st.pyplot(fig)
 
+# Celda 4: Colas M/M/1 y M/M/c
+import math
+
+def mm1_metrics(lmbda, mu):
+    rho = lmbda / mu
+    if rho >= 1:
+        return {"Modelo": "M/M/1", "Estable": False, "Rho": float(rho)}
+    Lq = (rho**2) / (1 - rho)
+    Wq = Lq / lmbda
+    W = Wq + (1 / mu)
+    L = lmbda * W
+    return {"Modelo": "M/M/1", "Estable": True, "Rho": float(rho),
+            "Lq": Lq, "Wq_min": Wq, "W_min": W, "L": L}
+
+def mmc_metrics(lmbda, mu, servers):
+    a = lmbda / mu
+    rho = a / servers
+    if rho >= 1:
+        return {"Modelo": "M/M/c", "Estable": False, "Rho": float(rho)}
+    sum_terms = sum((a**n) / math.factorial(n) for n in range(servers))
+    P0 = 1.0 / (sum_terms + (a**servers) / (math.factorial(servers) * (1 - rho)))
+    Pc = ((a**servers) / math.factorial(servers)) * (P0 / (1 - rho))
+    Wq = Pc * (1 / mu) * (1 / (servers - a))
+    W = Wq + (1 / mu)
+    Lq = lmbda * Wq
+    L = lmbda * W
+    return {"Modelo": "M/M/c", "Estable": True, "Rho": float(rho),
+            "P_espera": Pc, "Lq": Lq, "Wq_min": Wq, "W_min": W, "L": L}
+
+lambda_h = df["is_fraud"].sum()
+mu_h = 12
+c = 5
+
+mm1 = mm1_metrics(lambda_h/60, mu_h/60)
+mmc = mmc_metrics(lambda_h/60, mu_h/60, c)
+
+df_queues = pd.DataFrame([mm1, mmc])
+print("📊 Resultados de modelos de colas:")
+display(df_queues)
+
+
+# Celda 5: Reglas de asociación corregida
+from mlxtend.frequent_patterns import apriori, association_rules
+
+# Indicadores binarios
+df["is_high_amount"] = df["amount"] > 1000
+df["is_night"] = df["timestamp"].dt.hour.isin([0,1,2,3,4,23])
+
+# One-hot de canales
+channels = pd.get_dummies(df["channel"], prefix="channel")
+
+# Matriz booleana
+basket = pd.concat([df[["is_fraud","is_high_amount","is_night"]], channels], axis=1).astype(bool)
+
+# Itemsets frecuentes con soporte más bajo (ej. 0.05 = 5%)
+freq = apriori(basket, min_support=0.05, use_colnames=True)
+
+# Reglas de asociación
+rules = association_rules(freq, metric="lift", min_threshold=1.0)
+
+# Top reglas
+top_rules = rules.sort_values("lift", ascending=False).head(10)
+
+print("📊 Top 10 reglas de asociación (con soporte mínimo 5%):")
+display(top_rules[["antecedents","consequents","support","confidence","lift"]])
+
+
+
 # -----------------------------
 # Celda 6: Modelos ML
 # -----------------------------
