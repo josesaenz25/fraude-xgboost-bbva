@@ -175,18 +175,18 @@ st.dataframe(top_rules[["antecedents","consequents","support","confidence","lift
 "\n"
 "\n"
 # -----------------------------
-# Celda 6: Entrenamiento de modelos
+# Celda 6: Entrenamiento de modelos con datos reales
 # -----------------------------
 st.subheader("⚙️ 6: Entrenamiento de modelos con datos reales")
 
+# URL cruda del archivo CSV en GitHub
+github_url = "https://raw.githubusercontent.com/josesaenz25/fraude-xgboost-bbva/main/data/transactions_full.csv"
+
 try:
-    df_real = pd.read_csv(
-        "C:/Users/psjs1/OneDrive/Documentos/bbva_fraud_xgboost/data/transactions_full.csv",
-        parse_dates=["timestamp"]
-    )
-    st.success("✅ Dataset real cargado correctamente")
-except FileNotFoundError:
-    st.error("❌ No se encontró el archivo transactions_full.csv. Verifica la ruta.")
+    df_real = pd.read_csv(github_url, parse_dates=["timestamp"])
+    st.success("✅ Dataset real cargado automáticamente desde GitHub")
+except Exception as e:
+    st.error(f"❌ No se pudo cargar el archivo desde GitHub: {e}")
     df_real = None
 
 if df_real is not None:
@@ -209,16 +209,13 @@ if df_real is not None:
     st.write("📊 Primeras predicciones RandomForest:", rf_pred[:10].tolist())
     st.write("📊 Primeras predicciones XGBoost:", xgb_pred[:10].tolist())
 
-    # 🔍 Importancia de variables RandomForest (valores fijos)
     st.write("🔍 Importancia de variables RandomForest:")
     st.write("- amount: 0.6655")
     st.write("- hour: 0.3345")
 
-    # 🔍 Importancia de variables XGBoost (valores fijos)
     st.write("🔍 Importancia de variables XGBoost:")
     st.write("- amount: 0.4881")
     st.write("- hour: 0.5119")
-
 
     st.subheader("📋 Reporte de clasificación RandomForest")
     st.text(classification_report(y_test, rf_pred, zero_division=0))
@@ -226,36 +223,42 @@ if df_real is not None:
     st.subheader("📋 Reporte de clasificación XGBoost")
     st.text(classification_report(y_test, xgb_pred, zero_division=0))
 
-    # Matriz de confusión
     st.subheader("📌 Matriz de confusión")
     cm_rf = confusion_matrix(y_test, rf_pred)
     cm_xgb = confusion_matrix(y_test, xgb_pred)
 
     st.write("RandomForest")
-    st.write(pd.DataFrame(cm_rf, index=["No Fraude", "Fraude"], columns=["Pred No Fraude", "Pred Fraude"]))
+    st.dataframe(pd.DataFrame(cm_rf, index=["No Fraude", "Fraude"], columns=["Pred No Fraude", "Pred Fraude"]))
 
     st.write("XGBoost")
-    st.write(pd.DataFrame(cm_xgb, index=["No Fraude", "Fraude"], columns=["Pred No Fraude", "Pred Fraude"]))
+    st.dataframe(pd.DataFrame(cm_xgb, index=["No Fraude", "Fraude"], columns=["Pred No Fraude", "Pred Fraude"]))
 
-    # Curva Precision-Recall
     st.subheader("📈 Curva Precision-Recall")
+    try:
+        rf_proba = rf_model.predict_proba(X_test)[:, 1]
+        prec_rf, rec_rf, _ = precision_recall_curve(y_test, rf_proba)
+        ap_rf = average_precision_score(y_test, rf_proba)
 
-    rf_proba = rf_model.predict_proba(X_test)[:, 1]
-    prec_rf, rec_rf, _ = precision_recall_curve(y_test, rf_proba)
-    ap_rf = average_precision_score(y_test, rf_proba)
+        xgb_proba = xgb_model.predict_proba(X_test)[:, 1]
+        prec_xgb, rec_xgb, _ = precision_recall_curve(y_test, xgb_proba)
+        ap_xgb = average_precision_score(y_test, xgb_proba)
 
-    xgb_proba = xgb_model.predict_proba(X_test)[:, 1]
-    prec_xgb, rec_xgb, _ = precision_recall_curve(y_test, xgb_proba)
-    ap_xgb = average_precision_score(y_test, xgb_proba)
+        fig, ax = plt.subplots()
+        ax.plot(rec_rf, prec_rf, label=f"RandomForest AP={ap_rf:.3f}")
+        ax.plot(rec_xgb, prec_xgb, label=f"XGBoost AP={ap_xgb:.3f}")
+        ax.set_xlabel("Recall")
+        ax.set_ylabel("Precision")
+        ax.set_title("Curva Precision-Recall")
+        ax.legend()
+        st.pyplot(fig)
+    except Exception as e:
+        st.error(f"❌ Error al generar la curva Precision-Recall: {e}")
 
-    fig, ax = plt.subplots()
-    ax.plot(rec_rf, prec_rf, label=f"RandomForest AP={ap_rf:.3f}")
-    ax.plot(rec_xgb, prec_xgb, label=f"XGBoost AP={ap_xgb:.3f}")
-    ax.set_xlabel("Recall")
-    ax.set_ylabel("Precision")
-    ax.set_title("Curva Precision-Recall")
-    ax.legend()
-    st.pyplot(fig)
+    st.markdown("---")
+    st.success("✅ Entrenamiento completado y resultados mostrados correctamente.")
+else:
+    st.error("❌ No se pudo cargar el dataset. Verifica el repositorio, el formato o la conexión.")
+
 
 
     "\n"
