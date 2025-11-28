@@ -180,7 +180,7 @@ st.dataframe(top_rules[["antecedents","consequents","support","confidence","lift
 st.subheader("⚙️ 6: Entrenamiento de modelos con datos reales")
 
 # URL cruda del archivo CSV en GitHub
-github_url = "https://raw.githubusercontent.com/josesaenz25/fraude-xgboost-bbva/main/data/transactions_full.csv"
+github_url = "https://https://github.com/josesaenz25/fraude-xgboost-bbva/blob/main/transactions_full.csv"
 
 try:
     df_real = pd.read_csv(github_url, parse_dates=["timestamp"])
