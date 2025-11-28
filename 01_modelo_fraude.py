@@ -179,16 +179,24 @@ st.dataframe(top_rules[["antecedents","consequents","support","confidence","lift
 # -----------------------------
 st.subheader("⚙️ 6: Entrenamiento de modelos con datos reales")
 
-# Ruta local del archivo
-csv_path = "C:/Users/psjs1/OneDrive/Documentos/bbva_fraud_xgboost/data/transactions_full.csv"
+# URL cruda del archivo CSV en GitHub
+github_url = "https://raw.githubusercontent.com/tu_usuario/tu_repo/main/data/transactions_full.csv"
 
-# Intentar cargar automáticamente
+# Ruta local (solo útil en desarrollo local)
+local_path = "C:/Users/psjs1/OneDrive/Documentos/bbva_fraud_xgboost/data/transactions_full.csv"
+
+# Intentar cargar desde GitHub primero
 try:
-    df_real = pd.read_csv(csv_path, parse_dates=["timestamp"])
-    st.success("✅ Dataset real cargado automáticamente desde ruta local")
-except Exception as e:
-    st.error(f"❌ Error al cargar el archivo: {e}")
-    df_real = None
+    df_real = pd.read_csv(github_url, parse_dates=["timestamp"])
+    st.success("✅ Dataset real cargado automáticamente desde GitHub")
+except Exception as github_error:
+    st.warning("⚠️ No se pudo cargar desde GitHub. Intentando ruta local...")
+    try:
+        df_real = pd.read_csv(local_path, parse_dates=["timestamp"])
+        st.success("✅ Dataset real cargado desde ruta local")
+    except Exception as local_error:
+        st.error("❌ No se pudo cargar el dataset desde GitHub ni desde ruta local.")
+        df_real = None
 
 # Validar y continuar si se cargó correctamente
 if df_real is not None:
@@ -257,7 +265,8 @@ if df_real is not None:
     else:
         st.error("❌ El archivo no contiene las columnas necesarias: timestamp, amount, is_fraud")
 else:
-    st.error("❌ No se pudo cargar el dataset. Verifica la ruta o el formato del archivo.")
+    st.error("❌ No se pudo cargar el dataset. Verifica la ruta, el formato o el repositorio.")
+
 
 
 
