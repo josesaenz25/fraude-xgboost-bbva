@@ -175,27 +175,20 @@ st.dataframe(top_rules[["antecedents","consequents","support","confidence","lift
 "\n"
 "\n"
 # -----------------------------
-# Celda 6: Entrenamiento de modelos con datos reales
+# Celda 6: Entrenamiento de modelos
 # -----------------------------
 st.subheader("⚙️ 6: Entrenamiento de modelos con datos reales")
 
-# Intentar cargar desde ruta fija
 try:
     df_real = pd.read_csv(
         "C:/Users/psjs1/OneDrive/Documentos/bbva_fraud_xgboost/data/transactions_full.csv",
         parse_dates=["timestamp"]
     )
-    st.success("✅ Dataset real cargado correctamente desde ruta local")
+    st.success("✅ Dataset real cargado correctamente")
 except FileNotFoundError:
-    st.warning("⚠️ No se encontró el archivo en la ruta local. Puedes cargarlo manualmente abajo.")
-    uploaded_file = st.file_uploader("📁 Carga manual del archivo transactions_full.csv", type="csv")
-    if uploaded_file is not None:
-        df_real = pd.read_csv(uploaded_file, parse_dates=["timestamp"])
-        st.success("✅ Archivo cargado correctamente desde el navegador")
-    else:
-        df_real = None
+    st.error("❌ No se encontró el archivo transactions_full.csv. Verifica la ruta.")
+    df_real = None
 
-# Si se cargó el dataset, continuar con entrenamiento
 if df_real is not None:
     df_real["hour"] = df_real["timestamp"].dt.hour
     X = df_real[["amount", "hour"]]
@@ -216,16 +209,17 @@ if df_real is not None:
     st.write("📊 Primeras predicciones RandomForest:", rf_pred[:10].tolist())
     st.write("📊 Primeras predicciones XGBoost:", xgb_pred[:10].tolist())
 
-    # 🔍 Importancia de variables (valores fijos)
+    # 🔍 Importancia de variables RandomForest (valores fijos)
     st.write("🔍 Importancia de variables RandomForest:")
     st.write("- amount: 0.6655")
     st.write("- hour: 0.3345")
 
+    # 🔍 Importancia de variables XGBoost (valores fijos)
     st.write("🔍 Importancia de variables XGBoost:")
     st.write("- amount: 0.4881")
     st.write("- hour: 0.5119")
 
-    # Reportes de clasificación
+
     st.subheader("📋 Reporte de clasificación RandomForest")
     st.text(classification_report(y_test, rf_pred, zero_division=0))
 
@@ -238,10 +232,10 @@ if df_real is not None:
     cm_xgb = confusion_matrix(y_test, xgb_pred)
 
     st.write("RandomForest")
-    st.dataframe(pd.DataFrame(cm_rf, index=["No Fraude", "Fraude"], columns=["Pred No Fraude", "Pred Fraude"]))
+    st.write(pd.DataFrame(cm_rf, index=["No Fraude", "Fraude"], columns=["Pred No Fraude", "Pred Fraude"]))
 
     st.write("XGBoost")
-    st.dataframe(pd.DataFrame(cm_xgb, index=["No Fraude", "Fraude"], columns=["Pred No Fraude", "Pred Fraude"]))
+    st.write(pd.DataFrame(cm_xgb, index=["No Fraude", "Fraude"], columns=["Pred No Fraude", "Pred Fraude"]))
 
     # Curva Precision-Recall
     st.subheader("📈 Curva Precision-Recall")
@@ -262,9 +256,6 @@ if df_real is not None:
     ax.set_title("Curva Precision-Recall")
     ax.legend()
     st.pyplot(fig)
-else:
-    st.error("❌ No se pudo cargar el dataset. No se puede entrenar modelos.")
-
 
 
     "\n"
