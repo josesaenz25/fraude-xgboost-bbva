@@ -254,7 +254,19 @@ st.dataframe(df_queues)
 # -----------------------------
 # 5. Reglas de asociación
 # -----------------------------
-st.subheader("⚙️ 5: Reglas de asociación")
+st.markdown("""
+        <div style="
+            background-color: white;
+            border: 2px solid #0033A0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 10px;
+        ">
+            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 5: Reglas de asociación</h4>
+        </div>
+    """, unsafe_allow_html=True)
 df["is_high_amount"] = df["amount"] > 1000
 df["is_night"] = df["timestamp"].dt.hour.isin([0,1,2,3,4,23])
 channels = pd.get_dummies(df["channel"], prefix="channel")
@@ -273,7 +285,19 @@ st.dataframe(top_rules[["antecedents","consequents","support","confidence","lift
 # -----------------------------
 # 6. Entrenamiento con datos reales
 # -----------------------------
-st.subheader("⚙️ 6: Entrenamiento con datos reales")
+st.markdown("""
+        <div style="
+            background-color: white;
+            border: 2px solid #0033A0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 10px;
+        ">
+            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 6: Entrenamiento con datos</h4>
+        </div>
+    """, unsafe_allow_html=True)
 github_url = "https://raw.githubusercontent.com/josesaenz25/fraude-xgboost-bbva/main/transactions_full.csv"
 try:
     df_real = pd.read_csv(github_url, parse_dates=["timestamp"])
@@ -292,12 +316,43 @@ if df_real is not None:
     rf_model = RandomForestClassifier(random_state=42).fit(X_train, y_train)
     xgb_model = xgb.XGBClassifier(eval_metric="logloss", random_state=42).fit(X_train, y_train)
 
-    # Reportes
-    st.subheader("📋 Reporte de clasificación RandomForest")
-    st.text(classification_report(y_test, rf_model.predict(X_test), zero_division=0))
+    # -----------------------------
+    # Reportes con estilo BBVA
+    # -----------------------------
 
-    st.subheader("📋 Reporte de clasificación XGBoost")
-    st.text(classification_report(y_test, xgb_model.predict(X_test), zero_division=0))
+    from sklearn.metrics import classification_report
+
+    # Reporte RandomForest
+    st.subheader("📊 Reporte de clasificación – RandomForest")
+
+    rf_report_dict = classification_report(y_test, rf_model.predict(X_test), output_dict=True, zero_division=0)
+    rf_report_df = pd.DataFrame(rf_report_dict).T
+
+    st.dataframe(
+        rf_report_df.style.format(precision=2)
+        .set_properties(**{
+            "background-color": "#000000",
+            "color": "#FFFFFF",
+            "font-family": "Segoe UI"
+        })
+    )
+
+    # Reporte XGBoost
+    st.subheader("📊 Reporte de clasificación – XGBoost")
+
+    xgb_report_dict = classification_report(y_test, xgb_model.predict(X_test), output_dict=True, zero_division=0)
+    xgb_report_df = pd.DataFrame(xgb_report_dict).T
+
+    st.dataframe(
+        xgb_report_df.style.format(precision=2)
+        .set_properties(**{
+            "background-color": "#000000",
+            "color": "#FFFFFF",
+            "font-family": "Segoe UI"
+        })
+    )
+
+
 
     # Matriz de confusión
     st.subheader("📌 Matriz de confusión")
@@ -307,6 +362,7 @@ if df_real is not None:
                               index=["No Fraude","Fraude"], columns=["Pred No Fraude","Pred Fraude"]))
 
     # Curva Precision-Recall
+    st.subheader("📊 RandomForest vs XGBoost")
     rf_proba = rf_model.predict_proba(X_test)[:,1]
     xgb_proba = xgb_model.predict_proba(X_test)[:,1]
     prec_rf, rec_rf, _ = precision_recall_curve(y_test, rf_proba)
@@ -332,24 +388,38 @@ if df_real is not None:
 # -----------------------------
 # 7. Evaluación y visualizaciones
 # -----------------------------
-st.subheader("⚙️ 7: Evaluación y visualizaciones")
+st.markdown("""
+        <div style="
+            background-color: white;
+            border: 2px solid #0033A0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 10px;
+        ">
+            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 7: Evaluación y visualizaciones</h4>
+        </div>
+    """, unsafe_allow_html=True)
 
 # Reportes de clasificación en DataFrame (valores fijos para presentación ejecutiva)
+st.subheader("📊 Clasificación en DataFrame - RandomForest")
 rf_report = pd.DataFrame({
     "precision": [0.90, 0.00, 0.90, 0.45, 0.81],
     "recall":    [1.00, 0.00, 0.90, 0.50, 0.90],
     "f1-score":  [0.947368, 0.000000, 0.900000, 0.473684, 0.852632],
     "support":   [27.0, 3.0, 30.0, 30.0, 30.0]
 }, index=["0", "1", "accuracy", "macro avg", "weighted avg"])
+st.dataframe(rf_report.style.format(precision=3))
 
+
+st.subheader("📊 Clasificación en DataFrame - XGBoost")
 xgb_report = pd.DataFrame({
     "precision": [0.896552, 0.000000, 0.866667, 0.448276, 0.806897],
     "recall":    [0.962963, 0.000000, 0.866667, 0.481481, 0.866667],
     "f1-score":  [0.928571, 0.000000, 0.866667, 0.464286, 0.835714],
     "support":   [27.0, 3.0, 30.0, 30.0, 30.0]
 }, index=["0", "1", "accuracy", "macro avg", "weighted avg"])
-
-st.dataframe(rf_report.style.format(precision=3))
 st.dataframe(xgb_report.style.format(precision=3))
 
 
@@ -361,7 +431,19 @@ st.dataframe(xgb_report.style.format(precision=3))
 # -----------------------------
 # 8. Comparación de métricas y curva ROC
 # -----------------------------
-st.subheader("⚙️ 8: Comparación de métricas y curva ROC")
+st.markdown("""
+        <div style="
+            background-color: white;
+            border: 2px solid #0033A0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 10px;
+        ">
+            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 8: Comparación de métricas y curva ROC</h4>
+        </div>
+    """, unsafe_allow_html=True)
 
 metrics_df = pd.DataFrame({
     "RandomForest": {"precision": 0.81, "recall": 0.90, "f1-score": 0.85},
@@ -394,7 +476,19 @@ st.pyplot(fig)
 # -----------------------------
 # 9. Importancia de variables
 # -----------------------------
-st.subheader("⚙️ 9: Importancia de variables")
+st.markdown("""
+        <div style="
+            background-color: white;
+            border: 2px solid #0033A0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 10px;
+        ">
+            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 9: Importancia de variables</h4>
+        </div>
+    """, unsafe_allow_html=True)
 
 rf_importances = pd.Series(rf_model.feature_importances_, index=X.columns).sort_values(ascending=False)
 xgb_importances = pd.Series(xgb_model.feature_importances_, index=X.columns).sort_values(ascending=False)
@@ -418,7 +512,19 @@ st.pyplot(fig_xgb)
 # -----------------------------
 # 10. SHAP values
 # -----------------------------
-st.subheader("⚙️ 10: SHAP values")
+st.markdown("""
+        <div style="
+            background-color: white;
+            border: 2px solid #0033A0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 10px;
+        ">
+            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 10: SHAP values</h4>
+        </div>
+    """, unsafe_allow_html=True)
 
 # Valores simulados tipo SHAP
 rf_shap_values = pd.Series({"amount": 1.2, "hour": 0.6})
@@ -456,7 +562,19 @@ st.pyplot(fig_disp)
 # -----------------------------
 # 11. Dashboard interactivo con Plotly
 # -----------------------------
-st.subheader("⚙️ 11: Dashboard interactivo con Plotly")
+st.markdown("""
+        <div style="
+            background-color: white;
+            border: 2px solid #0033A0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 10px;
+        ">
+            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 11: Dashboard interactivo con Plotly</h4>
+        </div>
+    """, unsafe_allow_html=True)
 
 agg_plotly = pd.DataFrame({
     "hour_bucket": pd.date_range("2025-01-01", periods=12, freq="12H").tolist() * 3,
@@ -478,10 +596,22 @@ st.plotly_chart(fig, use_container_width=True)
 # -----------------------------
 # 12. Narrativa ejecutiva automática
 # -----------------------------
-st.subheader("⚙️ 12: Narrativa ejecutiva automática")
+st.markdown("""
+        <div style="
+            background-color: white;
+            border: 2px solid #0033A0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 10px;
+        ">
+            <h4 style="color:#0033A0; font-family:Segoe UI;">🧾 12: Resumen Ejecutivo:</h4>
+        </div>
+    """, unsafe_allow_html=True)
 
 summary_text = f"""
-### 🧾 Resumen Ejecutivo:
+
 - Se analizaron **{len(df)}** transacciones ficticias.
 - La tasa de fraude promedio fue **{df['is_fraud'].mean():.2%}**.
 - El modelo **RandomForest** obtuvo F1={rf_report.loc['weighted avg','f1-score']:.2f}.
@@ -500,7 +630,19 @@ st.markdown(summary_text)
 # -----------------------------
 # 13. Simulación de reducción de alertas irrelevantes
 # -----------------------------
-st.subheader("⚙️ 13: Simulación de reducción de alertas irrelevantes")
+st.markdown("""
+        <div style="
+            background-color: white;
+            border: 2px solid #0033A0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 10px;
+        ">
+            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 13: Simulación de reducción de alertas irrelevantes</h4>
+        </div>
+    """, unsafe_allow_html=True)
 
 df_mmc = pd.DataFrame([
     {"Modelo":"M/M/c","Estable":True,"Rho":0.20,"P_espera":0.0038,"Lq":0.0009,"Wq_min":0.0047,"W_min":5.0047,"L":1.0009},
@@ -517,7 +659,19 @@ st.dataframe(df_mmc)
 # -----------------------------
 # 14. Proceso de Poisson
 # -----------------------------
-st.subheader("⚙️ 14: Proceso de Poisson")
+st.markdown("""
+        <div style="
+            background-color: white;
+            border: 2px solid #0033A0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 10px;
+        ">
+            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 14: Proceso de Poisson</h4>
+        </div>
+    """, unsafe_allow_html=True)
 
 # Supongamos que detectamos 10 fraudes en 1 hora
 lambda_rate = 10  # fraudes por hora
@@ -549,22 +703,41 @@ st.pyplot(fig)
 # -----------------------------
 # 15. Conclusiones finales
 # -----------------------------
-st.subheader("⚙️ 15: Conclusiones finales")
+st.markdown("""
+        <div style="
+            background-color: white;
+            border: 2px solid #0033A0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 10px;
+        ">
+            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 15: Conclusiones finales</h4>
+        </div>
+    """, unsafe_allow_html=True)
 
-conclusions = """
-- Los modelos RandomForest y XGBoost alcanzan métricas aceptables en la detección de fraude.
+st.markdown("""
+<div style='
+    background-color: #F2F2F2;
+    padding: 20px;
+    border-radius: 12px;
+    font-family: "Segoe UI", sans-serif;
+    color: #1A1A1A;
+    line-height: 1.6;
+    font-size: 16px;
+'>
 
-- La interpretabilidad (importancia de variables y SHAP) aporta transparencia y facilita la toma de decisiones.
+<ul style='margin-top: 10px;'>
+  <li>✅ Los modelos <b>RandomForest</b> y <b>XGBoost</b> alcanzan métricas aceptables en la detección de fraude.</li>
+  <li>🔍 La <b>interpretabilidad</b> (importancia de variables y SHAP) aporta transparencia y facilita la toma de decisiones.</li>
+  <li>📊 El análisis de colas <b>M/M/1</b> y <b>M/M/c</b> evidencia la capacidad de respuesta y la necesidad de optimizar recursos operativos.</li>
+  <li>🧠 Las <b>reglas de asociación</b> identifican patrones adicionales de riesgo que enriquecen la prevención.</li>
+  <li>⏱️ El <b>proceso de Poisson</b> permite estimar tiempos esperados de ocurrencia de fraudes.</li>
+</ul>
+<br><br>
+</div>
+""", unsafe_allow_html=True)
 
-- El análisis de colas M/M/1 y M/M/c evidencia la capacidad de respuesta y la necesidad de optimizar recursos operativos.
 
-- Las reglas de asociación identifican patrones adicionales de riesgo que enriquecen la prevención.
 
-- El proceso de Poisson permite estimar tiempos esperados de ocurrencia de fraudes.
-
-"""
-
-st.markdown(conclusions)
-
-"\n"
-st.success("✅ Flujo completo y ejecutado correctamente.")
