@@ -125,7 +125,7 @@ n = 100
 df = pd.DataFrame({
     "amount": np.random.randint(10, 1000, n),
     "channel": np.random.choice(["WEB","ATM","POS"], n),
-    "timestamp": pd.date_range("2025-01-01", periods=n, freq="h"),
+    "timestamp": pd.date_range("2025-12-03", periods=n, freq="h"),
     "is_fraud": np.random.choice([0,1], n, p=[0.9,0.1])
 })
 st.dataframe(df.head())
@@ -676,6 +676,9 @@ st.markdown("""
 # Supongamos que detectamos 10 fraudes en 1 hora
 lambda_rate = 10  # fraudes por hora
 
+"\n"
+"\n"
+"\n"
 # Tiempo esperado hasta el próximo fraude
 expected_time = 1 / lambda_rate  # en horas
 expected_minutes = expected_time * 60
