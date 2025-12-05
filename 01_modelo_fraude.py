@@ -88,7 +88,7 @@ st.markdown("""
         text-align: center;
         margin-bottom: 25px;
     '>
-        <h2 style='color: #062C5F; font-size: 40px; margin:0;'>🚨 Detección de fraude con XGBoost – BBVA</h2>
+        <h2 style='color: #062C5F; font-size: 40px; margin:0;'>🚨 Modelo detección de fraudes con XGBoost – BBVA</h2>
         <p style='color: #0033A0; font-size: 18px; margin:5px 0;'>
         </p>
     </div>
@@ -107,28 +107,86 @@ st.markdown("""
 # -----------------------------
 # 1. Generación de datos ficticios
 # -----------------------------
+import streamlit as st
+import pandas as pd
+import numpy as np
+from datetime import datetime, date, time
+
+# Estilo BBVA visual
 st.markdown("""
-        <div style="
-            background-color: white;
-            border: 2px solid #0033A0;
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            margin-top: 30px;
-            margin-bottom: 10px;
-        ">
-            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 1: Simulación de transacciones bancarias</h4>
-        </div>
-    """, unsafe_allow_html=True)
-np.random.seed(42)
+    <div style="
+        background-color: white;
+        border: 2px solid #0033A0;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-top: 30px;
+        margin-bottom: 10px;
+    ">
+        <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 1: Simulación de transacciones bancarias</h4>
+    </div>
+""", unsafe_allow_html=True)
+
+# Parámetros
 n = 100
+fecha_actual = date.today()
+nocturnas_set = {23, 0, 1, 2, 3, 4}
+
+# Generar datos aleatorios
+horas = np.random.randint(0, 24, n)
+minutos = np.random.randint(0, 60, n)
+segundos = np.random.randint(0, 60, n)
+amounts = np.random.randint(10, 1000, n)
+channels = np.random.choice(["WEB", "ATM", "POS", "SPEI"], n)
+
+# Timestamps con fecha actual
+timestamps_dt = [datetime.combine(fecha_actual, time(horas[i], minutos[i], segundos[i])) for i in range(n)]
+timestamps = [ts.strftime("%d-%m-%Y %H:%M:%S") for ts in timestamps_dt]
+
+# Identificar transacciones nocturnas
+nocturnas_idx = [i for i, h in enumerate(horas) if h in nocturnas_set]
+
+# Si no hay transacciones nocturnas, forzar una
+if not nocturnas_idx:
+    idx_force = np.random.randint(0, n)
+    horas[idx_force] = np.random.choice(list(nocturnas_set))
+    timestamps_dt[idx_force] = datetime.combine(fecha_actual, time(horas[idx_force], minutos[idx_force], segundos[idx_force]))
+    timestamps[idx_force] = timestamps_dt[idx_force].strftime("%d-%m-%Y %H:%M:%S")
+    nocturnas_idx = [idx_force]
+
+# Recalcular índice de fraude: mayor monto entre nocturnas
+idx_fraude = max(nocturnas_idx, key=lambda i: amounts[i])
+
+# Etiquetas de fraude
+is_fraud = [0] * n
+is_fraud[idx_fraude] = 1
+
+# Construir DataFrame
 df = pd.DataFrame({
-    "amount": np.random.randint(10, 1000, n),
-    "channel": np.random.choice(["WEB","ATM","POS"], n),
-    "timestamp": pd.date_range("2025-12-03", periods=n, freq="h"),
-    "is_fraud": np.random.choice([0,1], n, p=[0.9,0.1])
+    "amount": amounts,
+    "channel": channels,
+    "timestamp": timestamps,
+    "is_fraud": is_fraud
 })
+
+# Extraer transacción fraudulenta
+fraud_row = df.iloc[idx_fraude]
+fraud_time = timestamps_dt[idx_fraude].strftime('%H:%M:%S')
+fraud_monto = fraud_row['amount']
+fraud_canal = fraud_row['channel']
+fraud_timestamp = fraud_row['timestamp']
+
+# Reordenar tabla: poner la transacción fraudulenta en la primera fila
+df = pd.concat([df.iloc[[idx_fraude]], df.drop(idx_fraude)]).reset_index(drop=True)
+
+# Mostrar tabla
 st.dataframe(df.head())
+
+# Mostrar mensaje dinámico
+st.info(f"🚨 Transacción fraudulenta: monto={fraud_monto}, hora={fraud_time}, canal={fraud_canal}")
+
+
+
 
 
 
@@ -139,28 +197,43 @@ st.dataframe(df.head())
 # -----------------------------
 # 2. Agregados por hora y canal
 # -----------------------------
+# Encabezado visual BBVA
 st.markdown("""
-        <div style="
-            background-color: white;
-            border: 2px solid #0033A0;
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            margin-top: 30px;
-            margin-bottom: 10px;
-        ">
-            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 2: Agregados por hora y canal</h4>
-        </div>
-    """, unsafe_allow_html=True)
+    <div style="
+        background-color: white;
+        border: 2px solid #0033A0;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-top: 30px;
+        margin-bottom: 10px;
+    ">
+        <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 2: Agregados por hora y canal</h4>
+    </div>
+""", unsafe_allow_html=True)
+
+# Convertir timestamp a datetime
+df["timestamp"] = pd.to_datetime(df["timestamp"], format="%d-%m-%Y %H:%M:%S")
+
+# Crear columna de hora redondeada
 df["hour_bucket"] = df["timestamp"].dt.floor("h")
+
+# Agrupar por hora y canal
 agg = (
     df.groupby(["hour_bucket", "channel"])
       .agg(tx_count=("is_fraud", "count"),
            fraud_count=("is_fraud", "sum"))
       .reset_index()
 )
+
+# Calcular tasa de fraude
 agg["fraud_rate"] = agg["fraud_count"] / agg["tx_count"]
-st.dataframe(agg.head())
+
+# Mostrar tabla de agregados
+st.dataframe(agg)
+
+
+
 
 
 "\n"
@@ -255,26 +328,59 @@ st.dataframe(df_queues)
 # 5. Reglas de asociación
 # -----------------------------
 st.markdown("""
-        <div style="
-            background-color: white;
-            border: 2px solid #0033A0;
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            margin-top: 30px;
-            margin-bottom: 10px;
-        ">
-            <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 5: Reglas de asociación</h4>
-        </div>
-    """, unsafe_allow_html=True)
+    <div style="
+        background-color: white;
+        border: 2px solid #0033A0;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-top: 30px;
+        margin-bottom: 10px;
+    ">
+        <h4 style="color:#0033A0; font-family:Segoe UI;">⚙️ 5: Reglas de asociación</h4>
+    </div>
+""", unsafe_allow_html=True)
+
+# ✅ Asegurar tipo datetime
+df["timestamp"] = pd.to_datetime(df["timestamp"], format="%d-%m-%Y %H:%M:%S", errors="coerce")
+
+# ✅ Variables booleanas
 df["is_high_amount"] = df["amount"] > 1000
-df["is_night"] = df["timestamp"].dt.hour.isin([0,1,2,3,4,23])
+df["is_night"] = df["timestamp"].dt.hour.isin([0, 1, 2, 3, 4, 23])
+
+# ✅ Codificar canales
 channels = pd.get_dummies(df["channel"], prefix="channel")
-basket = pd.concat([df[["is_fraud","is_high_amount","is_night"]], channels], axis=1).astype(bool)
+
+# ✅ Cesta de atributos
+basket = pd.concat([df[["is_fraud", "is_high_amount", "is_night"]], channels], axis=1).fillna(False).astype(bool)
+
+# ✅ Apriori y reglas
+from mlxtend.frequent_patterns import apriori, association_rules
 freq = apriori(basket, min_support=0.05, use_colnames=True)
 rules = association_rules(freq, metric="lift", min_threshold=1.0)
-top_rules = rules.sort_values("lift", ascending=False).head(10)
-st.dataframe(top_rules[["antecedents","consequents","support","confidence","lift"]])
+
+# ✅ Si hay reglas, mostrar tabla con métricas
+if not rules.empty:
+    top_rules = rules.sort_values("lift", ascending=False).head(10).copy()
+
+    # Convertir frozensets a texto legible
+    def set_to_text(fs):
+        return "{" + ", ".join(sorted(list(fs))) + "}"
+
+    top_rules["antecedents"] = top_rules["antecedents"].apply(set_to_text)
+    top_rules["consequents"] = top_rules["consequents"].apply(set_to_text)
+
+    # Redondear métricas
+    top_rules["support"] = top_rules["support"].round(3)
+    top_rules["confidence"] = top_rules["confidence"].round(3)
+    top_rules["lift"] = top_rules["lift"].round(3)
+
+    # Mostrar solo tabla de abajo
+    st.dataframe(top_rules[["antecedents", "consequents", "support", "confidence", "lift"]])
+else:
+    st.warning("No se generaron reglas con los parámetros actuales. Prueba ajustar el soporte o el umbral de lift.")
+
+    
 
 
 "\n"
