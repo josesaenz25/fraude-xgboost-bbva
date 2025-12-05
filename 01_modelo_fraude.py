@@ -182,14 +182,30 @@ df = pd.concat([df.iloc[[idx_fraude]], df.drop(idx_fraude)]).reset_index(drop=Tr
 # Mostrar tabla
 st.dataframe(df.head())
 
-# Mostrar mensaje dinámico
-st.info(f"🚨 Transacción fraudulenta: monto={fraud_monto}, hora={fraud_time}, canal={fraud_canal}")
+# ✅ Mensaje visual BBVA para transacción fraudulenta
+st.markdown(f"""
+    <div style="
+        background-color: #E6F0FF;
+        border-left: 6px solid #0033A0;
+        border-radius: 6px;
+        padding: 8px 16px;
+        margin-top: 2px;
+        margin-bottom: 10px;
+        font-family: Segoe UI, sans-serif;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    ">
+        <span style="font-size: 18px;">🚨 <strong style="color:#0033A0;">Transacción fraudulenta detectada</strong></span><br>
+        <span style="font-size: 15px;">Monto: <strong>${fraud_monto}</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Hora: <strong>{fraud_time}</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Canal: <strong>{fraud_canal}</strong></span>
+    </div>
+""", unsafe_allow_html=True)
 
 
 
 
 
 
+"\n"
+"\n"
 "\n"
 "\n"
 "\n"
@@ -380,7 +396,7 @@ if not rules.empty:
 else:
     st.warning("No se generaron reglas con los parámetros actuales. Prueba ajustar el soporte o el umbral de lift.")
 
-    
+
 
 
 "\n"
